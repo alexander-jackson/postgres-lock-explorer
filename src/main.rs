@@ -45,7 +45,7 @@ async fn main() {
 #[derive(Deserialize)]
 struct LockAnalysisRequest {
     query: String,
-    table: String,
+    relation: String,
 }
 
 #[derive(Serialize)]
@@ -83,7 +83,7 @@ async fn analyse_locks(
             WHERE psa.query = $1
             AND pc.relname = $2
         "#,
-            &[&request.query, &request.table],
+            &[&request.query, &request.relation],
         )
         .await
         .expect("Failed to run query");
