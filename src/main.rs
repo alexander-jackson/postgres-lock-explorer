@@ -9,12 +9,15 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use tokio_postgres::{Client, NoTls};
 
+mod error;
+
+use crate::error::ServerResult;
+
 type SharedClient = Arc<Mutex<(Client, Client)>>;
 
-async fn get_client() -> Client {
-    let (client, conn) = tokio_postgres::connect("host=localhost user=alex dbname=testing", NoTls)
-        .await
-        .expect("Failed to get connection");
+async fn get_client() -> ServerResult<Client> {
+    let (client, conn) =
+        tokio_postgres::connect("host=localhost user=alex dbname=testing", NoTls).await?;
 
     tokio::spawn(async move {
         if let Err(e) = conn.await {
@@ -22,13 +25,13 @@ async fn get_client() -> Client {
         }
     });
 
-    client
+    Ok(client)
 }
 
 #[tokio::main]
-async fn main() {
-    let left = get_client().await;
-    let right = get_client().await;
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let left = get_client().await?;
+    let right = get_client().await?;
 
     let client = Arc::new(Mutex::new((left, right)));
 
@@ -39,7 +42,9 @@ async fn main() {
     let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 5430).into();
 
     let server = Server::bind(&addr).serve(router.into_make_service());
-    server.await.expect("Failed to run server");
+    server.await?;
+
+    Ok(())
 }
 
 #[derive(Deserialize)]
@@ -57,20 +62,13 @@ struct LockAnalysisResponse {
 async fn analyse_locks(
     State(state): State<SharedClient>,
     Json(request): Json<LockAnalysisRequest>,
-) -> Json<LockAnalysisResponse> {
+) -> ServerResult<Json<LockAnalysisResponse>> {
     let mut client = state.lock().await;
     let (ref mut left, ref right) = client.deref_mut();
 
     // Begin a transaction
-    let transaction = left
-        .transaction()
-        .await
-        .expect("Failed to start a transaction");
-
-    transaction
-        .query(&request.query, &[])
-        .await
-        .expect("Failed to run query");
+    let transaction = left.transaction().await?;
+    transaction.query(&request.query, &[]).await?;
 
     // Use the other connection to inspect the locks
     let lock = right
@@ -85,18 +83,14 @@ async fn analyse_locks(
         "#,
             &[&request.query, &request.relation],
         )
-        .await
-        .expect("Failed to run query");
+        .await?;
 
-    transaction
-        .rollback()
-        .await
-        .expect("Failed to rollback the transaction");
+    transaction.rollback().await?;
 
     let response = LockAnalysisResponse {
         locktype: lock.get(0),
         mode: lock.get(1),
     };
 
-    Json(response)
+    Ok(Json(response))
 }
