@@ -7,17 +7,25 @@ use axum::routing::put;
 use axum::{Router, Server};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
-use tokio_postgres::{Client, NoTls};
+use tokio_postgres::{Client, Config, NoTls};
 
+mod args;
 mod error;
 
+use crate::args::Args;
 use crate::error::ServerResult;
 
 type SharedClient = Arc<Mutex<(Client, Client)>>;
 
-async fn get_client() -> ServerResult<Client> {
-    let (client, conn) =
-        tokio_postgres::connect("host=localhost user=alex dbname=testing", NoTls).await?;
+async fn get_client(args: &Args) -> ServerResult<Client> {
+    let mut config = Config::new();
+
+    config
+        .host(&args.host)
+        .user(&args.user)
+        .dbname(&args.database);
+
+    let (client, conn) = config.connect(NoTls).await?;
 
     tokio::spawn(async move {
         if let Err(e) = conn.await {
@@ -30,8 +38,10 @@ async fn get_client() -> ServerResult<Client> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let left = get_client().await?;
-    let right = get_client().await?;
+    let args = Args::from_env()?;
+
+    let left = get_client(&args).await?;
+    let right = get_client(&args).await?;
 
     let client = Arc::new(Mutex::new((left, right)));
 
