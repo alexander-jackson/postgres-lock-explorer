@@ -1,27 +1,36 @@
 use std::net::{Ipv4Addr, SocketAddrV4};
+use std::ops::DerefMut;
 use std::sync::Arc;
 
-use axum::extract::State;
+use axum::extract::{Json, State};
 use axum::routing::put;
 use axum::{Router, Server};
+use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use tokio_postgres::{Client, NoTls};
 
-type SharedClient = Arc<Mutex<Client>>;
+type SharedClient = Arc<Mutex<(Client, Client)>>;
 
-#[tokio::main]
-async fn main() {
-    let (client, connection) = tokio_postgres::connect("host=localhost user=alex", NoTls)
+async fn get_client() -> Client {
+    let (client, conn) = tokio_postgres::connect("host=localhost user=alex dbname=testing", NoTls)
         .await
         .expect("Failed to get connection");
 
     tokio::spawn(async move {
-        if let Err(e) = connection.await {
+        if let Err(e) = conn.await {
             eprintln!("connection error: {}", e);
         }
     });
 
-    let client = Arc::new(Mutex::new(client));
+    client
+}
+
+#[tokio::main]
+async fn main() {
+    let left = get_client().await;
+    let right = get_client().await;
+
+    let client = Arc::new(Mutex::new((left, right)));
 
     let router = Router::new()
         .route("/analyse", put(analyse_locks))
@@ -33,19 +42,61 @@ async fn main() {
     server.await.expect("Failed to run server");
 }
 
-async fn analyse_locks(State(state): State<SharedClient>) -> &'static str {
+#[derive(Deserialize)]
+struct LockAnalysisRequest {
+    query: String,
+    table: String,
+}
+
+#[derive(Serialize)]
+struct LockAnalysisResponse {
+    locktype: String,
+    mode: String,
+}
+
+async fn analyse_locks(
+    State(state): State<SharedClient>,
+    Json(request): Json<LockAnalysisRequest>,
+) -> Json<LockAnalysisResponse> {
     let mut client = state.lock().await;
+    let (ref mut left, ref right) = client.deref_mut();
 
     // Begin a transaction
-    let transaction = client
+    let transaction = left
         .transaction()
         .await
         .expect("Failed to start a transaction");
 
     transaction
-        .commit()
+        .query(&request.query, &[])
         .await
-        .expect("Failed to commit the transaction");
+        .expect("Failed to run query");
 
-    "Hello, World!"
+    // Use the other connection to inspect the locks
+    let lock = right
+        .query_one(
+            r#"
+            SELECT pl.locktype, mode
+            FROM pg_locks pl
+            JOIN pg_stat_activity psa ON pl.pid = psa.pid
+            JOIN pg_class pc ON pc.oid = pl.relation
+            WHERE psa.query = $1
+            AND pc.relname = $2
+        "#,
+            &[&request.query, &request.table],
+        )
+        .await
+        .expect("Failed to run query");
+
+    transaction
+        .rollback()
+        .await
+        .expect("Failed to rollback the transaction");
+
+    let response = LockAnalysisResponse {
+        locktype: lock.get(0),
+        mode: lock.get(1),
+    };
+
+    Json(response)
 }
