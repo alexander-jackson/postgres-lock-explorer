@@ -72,7 +72,7 @@ struct LockAnalysisResponse {
 async fn analyse_locks(
     State(state): State<SharedClient>,
     Json(request): Json<LockAnalysisRequest>,
-) -> ServerResult<Json<LockAnalysisResponse>> {
+) -> ServerResult<Json<Option<LockAnalysisResponse>>> {
     let mut client = state.lock().await;
     let (ref mut left, ref right) = client.deref_mut();
 
@@ -82,7 +82,7 @@ async fn analyse_locks(
 
     // Use the other connection to inspect the locks
     let lock = right
-        .query_one(
+        .query_opt(
             r#"
             SELECT pl.locktype, mode
             FROM pg_locks pl
@@ -97,10 +97,10 @@ async fn analyse_locks(
 
     transaction.rollback().await?;
 
-    let response = LockAnalysisResponse {
-        locktype: lock.get(0),
-        mode: lock.get(1),
-    };
+    let response = lock.map(|row| LockAnalysisResponse {
+        locktype: row.get(0),
+        mode: row.get(1),
+    });
 
     Ok(Json(response))
 }
