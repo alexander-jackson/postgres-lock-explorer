@@ -1,5 +1,6 @@
 use backend_connector::{LockAnalysisRequest, LockAnalysisResponse};
 use color_eyre::Result;
+use dialoguer::{theme::ColorfulTheme, Input};
 use ureq::Agent;
 
 fn main() -> Result<()> {
@@ -7,12 +8,12 @@ fn main() -> Result<()> {
 
     let agent = Agent::new();
 
-    let request = LockAnalysisRequest {
-        query: String::from("SELECT * FROM example"),
-        relation: String::from("example"),
-    };
+    let query = get_text("Enter a query")?;
+    let relation = get_text("Enter a relation")?;
 
-    let response: LockAnalysisResponse = agent
+    let request = LockAnalysisRequest { query, relation };
+
+    let response: Option<LockAnalysisResponse> = agent
         .put("http://localhost:5430/analyse")
         .send_json(&request)?
         .into_json()?;
@@ -20,4 +21,14 @@ fn main() -> Result<()> {
     println!("{response:?}");
 
     Ok(())
+}
+
+fn get_text(prompt: &str) -> Result<String> {
+    let theme = ColorfulTheme::default();
+
+    let value = Input::with_theme(&theme)
+        .with_prompt(prompt)
+        .interact_text()?;
+
+    Ok(value)
 }

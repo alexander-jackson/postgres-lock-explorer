@@ -6,4 +6,5 @@ edition = "2021"
 [dependencies]
 backend-connector = { version = "0.1.0", path = "../backend/connector" }
 color-eyre = "0.6.2"
+dialoguer = { version = "0.10.4", default-features = false }
 ureq = { version = "2.7.1", features = ["json"], default-features = false }
