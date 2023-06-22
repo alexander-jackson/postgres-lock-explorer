@@ -11,7 +11,10 @@ fn main() -> Result<()> {
     let query = get_text("Enter a query")?;
     let relation = get_text("Enter a relation")?;
 
-    let request = LockAnalysisRequest { query, relation };
+    let request = LockAnalysisRequest {
+        query,
+        relation: relation.clone(),
+    };
 
     let response: Option<LockAnalysisResponse> = agent
         .put("http://localhost:5430/analyse")
@@ -20,9 +23,9 @@ fn main() -> Result<()> {
 
     match response {
         Some(LockAnalysisResponse { locktype, mode }) => {
-            println!("Lock of type '{locktype}' with mode '{mode}' will be taken")
+            println!("Lock of type '{locktype}' with mode '{mode}' will be taken on relation '{relation}'")
         }
-        None => println!("No lock will be taken on this relation"),
+        None => println!("No lock will be taken on relation '{relation}' by this query"),
     }
 
     Ok(())

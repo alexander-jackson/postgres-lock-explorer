@@ -21,5 +21,5 @@ You can then make requests to the server with the CLI:
 > cargo run --bin cli
 ✔ Enter a query · SELECT * FROM example
 ✔ Enter a relation · example
-Lock of type 'relation' with mode 'AccessShareLock' will be taken
+Lock of type 'relation' with mode 'AccessShareLock' will be taken on relation 'example'
 ```
