@@ -12,20 +12,14 @@ You'll need to run the server separately against a Postgres database for
 testing:
 
 ```bash
-cargo run -- -h localhost -U postgres -d testing
+> cargo run --bin postgres-lock-explorer -- -h localhost -U postgres -d testing
 ```
 
-You can then make requests to the server using `curl` (and parsing with `jq`):
+You can then make requests to the server with the CLI:
 
 ```bash
-curl \
-    -s -X PUT -H "Content-Type: application/json" \
-    --data '{"query": "SELECT * FROM example", "relation": "example"}' \
-    http://localhost:5430/analyse | jq
-
-# Output
-{
-  "locktype": "relation",
-  "mode": "AccessShareLock"
-}
+> cargo run --bin cli
+✔ Enter a query · SELECT * FROM example
+✔ Enter a relation · example
+Lock of type 'relation' with mode 'AccessShareLock' will be taken
 ```
