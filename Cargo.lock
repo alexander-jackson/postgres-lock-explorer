@@ -69,6 +69,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "backend-connector"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "base64"
 version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -480,8 +487,8 @@ name = "postgres-lock-explorer"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "backend-connector",
  "pico-args",
- "serde",
  "tokio",
  "tokio-postgres",
 ]

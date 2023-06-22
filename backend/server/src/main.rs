@@ -5,7 +5,7 @@ use std::sync::Arc;
 use axum::extract::{Json, State};
 use axum::routing::put;
 use axum::{Router, Server};
-use serde::{Deserialize, Serialize};
+use backend_connector::{LockAnalysisRequest, LockAnalysisResponse};
 use tokio::sync::Mutex;
 use tokio_postgres::{Client, Config, NoTls};
 
@@ -57,18 +57,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[derive(Deserialize)]
-struct LockAnalysisRequest {
-    query: String,
-    relation: String,
-}
-
-#[derive(Serialize)]
-struct LockAnalysisResponse {
-    locktype: String,
-    mode: String,
-}
-
 async fn analyse_locks(
     State(state): State<SharedClient>,
     Json(request): Json<LockAnalysisRequest>,
@@ -84,7 +72,7 @@ async fn analyse_locks(
     let lock = right
         .query_opt(
             r#"
-            SELECT pl.locktype, mode
+            SELECT pl.locktype, pl.mode
             FROM pg_locks pl
             JOIN pg_stat_activity psa ON pl.pid = psa.pid
             JOIN pg_class pc ON pc.oid = pl.relation
