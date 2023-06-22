@@ -11,10 +11,7 @@ fn main() -> Result<()> {
     let query = get_text("Enter a query")?;
     let relation = get_text("Enter a relation")?;
 
-    let request = LockAnalysisRequest {
-        query,
-        relation: relation.clone(),
-    };
+    let request = LockAnalysisRequest::new(&query, &relation);
 
     let response: Option<LockAnalysisResponse> = agent
         .put("http://localhost:5430/analyse")
