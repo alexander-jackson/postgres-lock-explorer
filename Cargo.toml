@@ -2,4 +2,5 @@
 members = [
 	"backend/server",
 	"backend/connector",
+	"cli",
 ]

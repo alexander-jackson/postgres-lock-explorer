@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LockAnalysisRequest {
     pub query: String,
     pub relation: String,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LockAnalysisResponse {
     pub locktype: String,
     pub mode: String,
