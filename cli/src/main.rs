@@ -18,7 +18,12 @@ fn main() -> Result<()> {
         .send_json(&request)?
         .into_json()?;
 
-    println!("{response:?}");
+    match response {
+        Some(LockAnalysisResponse { locktype, mode }) => {
+            println!("Lock of type '{locktype}' with mode '{mode}' will be taken")
+        }
+        None => println!("No lock will be taken on this relation"),
+    }
 
     Ok(())
 }
