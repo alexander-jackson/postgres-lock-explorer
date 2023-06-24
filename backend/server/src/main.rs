@@ -23,7 +23,8 @@ async fn get_client(args: &Args) -> ServerResult<Client> {
     config
         .host(&args.host)
         .user(&args.user)
-        .dbname(&args.database);
+        .dbname(&args.database)
+        .port(args.database_port);
 
     let (client, conn) = config.connect(NoTls).await?;
 
