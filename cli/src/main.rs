@@ -1,4 +1,4 @@
-use backend_connector::{LockAnalysisRequest, LockAnalysisResponse};
+use backend_connector::LockAnalysisResponse;
 use color_eyre::Result;
 use dialoguer::{theme::ColorfulTheme, Input};
 use ureq::Agent;
@@ -11,12 +11,10 @@ fn main() -> Result<()> {
     let query = get_text("Enter a query")?;
     let relation = get_text("Enter a relation")?;
 
-    let request = LockAnalysisRequest::new(&query, &relation);
+    let uri = format!("http://localhost:5430/locks/{relation}");
 
-    let response: Option<LockAnalysisResponse> = agent
-        .put("http://localhost:5430/analyse")
-        .send_json(&request)?
-        .into_json()?;
+    let response: Option<LockAnalysisResponse> =
+        agent.get(&uri).query("query", &query).call()?.into_json()?;
 
     match response {
         Some(LockAnalysisResponse { locktype, mode }) => {
