@@ -38,7 +38,47 @@ pub async fn analyse_locks_on_relation(
     let response = lock.map(|row| LockAnalysisResponse {
         locktype: row.get(0),
         mode: row.get(1),
+        relation,
     });
+
+    Ok(Json(response))
+}
+
+pub async fn analyse_all_locks(
+    State(state): State<SharedClient>,
+    Query(req): Query<LockAnalysisRequest>,
+) -> ServerResult<Json<Vec<LockAnalysisResponse>>> {
+    let mut client = state.lock().await;
+    let (ref mut left, ref right) = client.deref_mut();
+
+    // Begin a transaction
+    let transaction = left.transaction().await?;
+    transaction.query(&req.query, &[]).await?;
+
+    // Use the other connection to inspect the locks
+    let locks = right
+        .query(
+            r#"
+            SELECT pl.locktype, pl.mode, pc.relname
+            FROM pg_locks pl
+            JOIN pg_stat_activity psa ON pl.pid = psa.pid
+            JOIN pg_class pc ON pc.oid = pl.relation
+            WHERE psa.query = $1
+        "#,
+            &[&req.query],
+        )
+        .await?;
+
+    transaction.rollback().await?;
+
+    let response = locks
+        .iter()
+        .map(|row| LockAnalysisResponse {
+            locktype: row.get(0),
+            mode: row.get(1),
+            relation: row.get(2),
+        })
+        .collect();
 
     Ok(Json(response))
 }

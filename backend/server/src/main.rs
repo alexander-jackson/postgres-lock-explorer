@@ -49,6 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/locks/:relation",
             get(endpoints::analyse_locks_on_relation),
         )
+        .route("/locks", get(endpoints::analyse_all_locks))
         .with_state(client);
 
     let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 5430).into();

@@ -9,4 +9,5 @@ pub struct LockAnalysisRequest {
 pub struct LockAnalysisResponse {
     pub locktype: String,
     pub mode: String,
+    pub relation: String,
 }

@@ -1,7 +1,9 @@
-use backend_connector::LockAnalysisResponse;
 use color_eyre::Result;
-use dialoguer::{theme::ColorfulTheme, Input};
+use dialoguer::{theme::ColorfulTheme, Confirm, Input};
+use ureq::serde::de::DeserializeOwned;
 use ureq::Agent;
+
+use backend_connector::LockAnalysisResponse;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
@@ -9,21 +11,48 @@ fn main() -> Result<()> {
     let agent = Agent::new();
 
     let query = get_text("Enter a query")?;
-    let relation = get_text("Enter a relation")?;
 
-    let uri = format!("http://localhost:5430/locks/{relation}");
+    let with_relation = Confirm::new()
+        .with_prompt("Do you want to specify a relation?")
+        .interact()?;
 
-    let response: Option<LockAnalysisResponse> =
-        agent.get(&uri).query("query", &query).call()?.into_json()?;
+    let base = format!("http://localhost:5430/locks");
 
-    match response {
-        Some(LockAnalysisResponse { locktype, mode }) => {
-            println!("Lock of type '{locktype}' with mode '{mode}' will be taken on relation '{relation}'")
+    if with_relation {
+        let relation = get_text("Enter a relation")?;
+        let uri = format!("{base}/{relation}");
+
+        let response: Option<LockAnalysisResponse> = make_request(agent, &uri, &query)?;
+
+        match response {
+            Some(analysis) => display_analysis(analysis),
+            None => println!("No locks will be taken on {relation}"),
         }
-        None => println!("No lock will be taken on relation '{relation}' by this query"),
+    } else {
+        let response: Vec<LockAnalysisResponse> = make_request(agent, &base, &query)?;
+
+        for analysis in response {
+            display_analysis(analysis);
+        }
     }
 
     Ok(())
+}
+
+fn make_request<T: DeserializeOwned>(agent: Agent, uri: &str, query: &str) -> Result<T> {
+    let value = agent.get(uri).query("query", query).call()?.into_json()?;
+
+    Ok(value)
+}
+
+fn display_analysis(analysis: LockAnalysisResponse) {
+    let LockAnalysisResponse {
+        locktype,
+        mode,
+        relation,
+    } = analysis;
+
+    println!("Lock of type '{locktype}' with mode '{mode}' will be taken on relation '{relation}'")
 }
 
 fn get_text(prompt: &str) -> Result<String> {
