@@ -64,6 +64,7 @@ pub async fn analyse_all_locks(
             JOIN pg_stat_activity psa ON pl.pid = psa.pid
             JOIN pg_class pc ON pc.oid = pl.relation
             WHERE psa.query = $1
+            ORDER BY pc.relname, pl.mode
         "#,
             &[&req.query],
         )
