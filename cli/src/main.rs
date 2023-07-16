@@ -31,6 +31,10 @@ fn main() -> Result<()> {
     } else {
         let response: Vec<LockAnalysisResponse> = make_request(agent, &base, &query)?;
 
+        if response.is_empty() {
+            println!("No locks were returned for this query");
+        }
+
         for analysis in response {
             display_analysis(analysis);
         }
