@@ -1,7 +1,7 @@
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::sync::Arc;
 
-use axum::routing::get;
+use axum::routing::put;
 use axum::{Router, Server};
 use tokio::sync::Mutex;
 use tokio_postgres::{Client, Config, NoTls};
@@ -21,6 +21,7 @@ async fn get_client(args: &Args) -> ServerResult<Client> {
     config
         .host(&args.host)
         .user(&args.user)
+        .password(&args.password)
         .dbname(&args.database)
         .port(args.database_port);
 
@@ -47,9 +48,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let router = Router::new()
         .route(
             "/locks/:relation",
-            get(endpoints::analyse_locks_on_relation),
+            put(endpoints::analyse_locks_on_relation),
         )
-        .route("/locks", get(endpoints::analyse_all_locks))
+        .route("/locks", put(endpoints::analyse_all_locks))
         .with_state(client);
 
     let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 5430).into();

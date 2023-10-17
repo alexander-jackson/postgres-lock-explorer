@@ -38,3 +38,10 @@ Lock of type 'relation' with mode 'AccessShareLock' will be taken on relation 'e
 Lock of type 'relation' with mode 'AccessShareLock' will be taken on relation 'other'
 Lock of type 'relation' with mode 'ShareRowExclusiveLock' will be taken on relation 'other'
 ```
+
+You can also read the query from a file:
+
+```bash
+> cargo run --bin cli
+✔ Enter a query · @query.sql
+```

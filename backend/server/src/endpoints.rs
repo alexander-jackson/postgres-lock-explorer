@@ -1,6 +1,6 @@
 use std::ops::DerefMut;
 
-use axum::extract::{Json, Path, Query, State};
+use axum::extract::{Json, Path, State};
 use backend_connector::{LockAnalysisRequest, LockAnalysisResponse};
 
 use crate::error::ServerResult;
@@ -9,8 +9,8 @@ use crate::SharedClient;
 pub async fn analyse_locks_on_relation(
     State(state): State<SharedClient>,
     Path(relation): Path<String>,
-    Query(req): Query<LockAnalysisRequest>,
-) -> ServerResult<Json<Option<LockAnalysisResponse>>> {
+    Json(req): Json<LockAnalysisRequest>,
+) -> ServerResult<Json<Vec<LockAnalysisResponse>>> {
     let mut client = state.lock().await;
     let (ref mut left, ref right) = client.deref_mut();
 
@@ -19,10 +19,10 @@ pub async fn analyse_locks_on_relation(
     transaction.query(&req.query, &[]).await?;
 
     // Use the other connection to inspect the locks
-    let lock = right
-        .query_opt(
+    let locks = right
+        .query(
             r#"
-            SELECT pl.locktype, pl.mode
+            SELECT pl.locktype, pl.mode, pc.relname
             FROM pg_locks pl
             JOIN pg_stat_activity psa ON pl.pid = psa.pid
             JOIN pg_class pc ON pc.oid = pl.relation
@@ -35,18 +35,21 @@ pub async fn analyse_locks_on_relation(
 
     transaction.rollback().await?;
 
-    let response = lock.map(|row| LockAnalysisResponse {
-        locktype: row.get(0),
-        mode: row.get(1),
-        relation,
-    });
+    let response = locks
+        .into_iter()
+        .map(|row| LockAnalysisResponse {
+            locktype: row.get(0),
+            mode: row.get(1),
+            relation: row.get(2),
+        })
+        .collect();
 
     Ok(Json(response))
 }
 
 pub async fn analyse_all_locks(
     State(state): State<SharedClient>,
-    Query(req): Query<LockAnalysisRequest>,
+    Json(req): Json<LockAnalysisRequest>,
 ) -> ServerResult<Json<Vec<LockAnalysisResponse>>> {
     let mut client = state.lock().await;
     let (ref mut left, ref right) = client.deref_mut();

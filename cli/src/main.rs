@@ -3,7 +3,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm, Input};
 use ureq::serde::de::DeserializeOwned;
 use ureq::Agent;
 
-use backend_connector::LockAnalysisResponse;
+use backend_connector::{LockAnalysisRequest, LockAnalysisResponse};
 
 fn main() -> Result<()> {
     color_eyre::install()?;
@@ -11,6 +11,7 @@ fn main() -> Result<()> {
     let agent = Agent::new();
 
     let query = get_text("Enter a query")?;
+    let query = resolve_query_text(&query)?;
 
     let with_relation = Confirm::new()
         .with_prompt("Do you want to specify a relation?")
@@ -22,11 +23,14 @@ fn main() -> Result<()> {
         let relation = get_text("Enter a relation")?;
         let uri = format!("{base}/{relation}");
 
-        let response: Option<LockAnalysisResponse> = make_request(agent, &uri, &query)?;
+        let response: Vec<LockAnalysisResponse> = make_request(agent, &uri, &query)?;
 
-        match response {
-            Some(analysis) => display_analysis(analysis),
-            None => println!("No locks will be taken on {relation}"),
+        if response.is_empty() {
+            println!("No locks will be taken on {relation}");
+        } else {
+            for analysis in response {
+                display_analysis(analysis);
+            }
         }
     } else {
         let response: Vec<LockAnalysisResponse> = make_request(agent, &base, &query)?;
@@ -44,7 +48,11 @@ fn main() -> Result<()> {
 }
 
 fn make_request<T: DeserializeOwned>(agent: Agent, uri: &str, query: &str) -> Result<T> {
-    let value = agent.get(uri).query("query", query).call()?.into_json()?;
+    let payload = LockAnalysisRequest {
+        query: query.to_string(),
+    };
+
+    let value = agent.put(uri).send_json(&payload)?.into_json()?;
 
     Ok(value)
 }
@@ -67,4 +75,14 @@ fn get_text(prompt: &str) -> Result<String> {
         .interact_text()?;
 
     Ok(value)
+}
+
+fn resolve_query_text(input: &str) -> Result<String> {
+    if let Some(filename) = input.strip_prefix("@") {
+        let content = std::fs::read_to_string(&filename)?;
+
+        return Ok(content);
+    }
+
+    return Ok(input.to_string());
 }
