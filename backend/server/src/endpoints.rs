@@ -2,6 +2,8 @@ use std::ops::DerefMut;
 
 use axum::extract::{Json, Path, State};
 use backend_connector::{LockAnalysisRequest, LockAnalysisResponse};
+use tokio_postgres::types::ToSql;
+use tokio_postgres::Client;
 
 use crate::error::ServerResult;
 use crate::SharedClient;
@@ -14,37 +16,25 @@ pub async fn analyse_locks_on_relation(
     let mut client = state.lock().await;
     let (ref mut left, ref right) = client.deref_mut();
 
-    // Begin a transaction
-    let transaction = left.transaction().await?;
-    transaction.query(&req.query, &[]).await?;
+    let lock_query = r#"
+        SELECT pl.locktype, pl.mode, pc.relname
+        FROM pg_locks pl
+        JOIN pg_stat_activity psa ON pl.pid = psa.pid
+        JOIN pg_class pc ON pc.oid = pl.relation
+        WHERE psa.query = $1
+        AND pc.relname = $2
+    "#;
 
-    // Use the other connection to inspect the locks
-    let locks = right
-        .query(
-            r#"
-            SELECT pl.locktype, pl.mode, pc.relname
-            FROM pg_locks pl
-            JOIN pg_stat_activity psa ON pl.pid = psa.pid
-            JOIN pg_class pc ON pc.oid = pl.relation
-            WHERE psa.query = $1
-            AND pc.relname = $2
-        "#,
-            &[&req.query, &relation],
-        )
-        .await?;
+    let locks = inspect_locks(
+        left,
+        right,
+        &req.query,
+        lock_query,
+        &[&req.query, &relation],
+    )
+    .await?;
 
-    transaction.rollback().await?;
-
-    let response = locks
-        .into_iter()
-        .map(|row| LockAnalysisResponse {
-            locktype: row.get(0),
-            mode: row.get(1),
-            relation: row.get(2),
-        })
-        .collect();
-
-    Ok(Json(response))
+    Ok(Json(locks))
 }
 
 pub async fn analyse_all_locks(
@@ -54,24 +44,33 @@ pub async fn analyse_all_locks(
     let mut client = state.lock().await;
     let (ref mut left, ref right) = client.deref_mut();
 
+    let lock_query = r#"
+        SELECT pl.locktype, pl.mode, pc.relname
+        FROM pg_locks pl
+        JOIN pg_stat_activity psa ON pl.pid = psa.pid
+        JOIN pg_class pc ON pc.oid = pl.relation
+        WHERE psa.query = $1
+        ORDER BY pc.relname, pl.mode
+    "#;
+
+    let locks = inspect_locks(left, right, &req.query, lock_query, &[&req.query]).await?;
+
+    Ok(Json(locks))
+}
+
+async fn inspect_locks(
+    left: &mut Client,
+    right: &Client,
+    query: &str,
+    lock_query: &str,
+    lock_query_params: &[&(dyn ToSql + Sync)],
+) -> ServerResult<Vec<LockAnalysisResponse>> {
     // Begin a transaction
     let transaction = left.transaction().await?;
-    transaction.query(&req.query, &[]).await?;
+    transaction.query(query, &[]).await?;
 
     // Use the other connection to inspect the locks
-    let locks = right
-        .query(
-            r#"
-            SELECT pl.locktype, pl.mode, pc.relname
-            FROM pg_locks pl
-            JOIN pg_stat_activity psa ON pl.pid = psa.pid
-            JOIN pg_class pc ON pc.oid = pl.relation
-            WHERE psa.query = $1
-            ORDER BY pc.relname, pl.mode
-        "#,
-            &[&req.query],
-        )
-        .await?;
+    let locks = right.query(lock_query, lock_query_params).await?;
 
     transaction.rollback().await?;
 
@@ -84,5 +83,5 @@ pub async fn analyse_all_locks(
         })
         .collect();
 
-    Ok(Json(response))
+    Ok(response)
 }
