@@ -18,31 +18,17 @@ fn main() -> Result<()> {
         .interact()?;
 
     let base = format!("http://localhost:5430/locks");
+    let uri = match with_relation {
+        true => format!("{base}/{}", get_text("Enter a relation")?),
+        false => base,
+    };
 
-    if with_relation {
-        let relation = get_text("Enter a relation")?;
-        let uri = format!("{base}/{relation}");
+    let response: Vec<LockAnalysisResponse> = make_request(agent, &uri, &query)?;
 
-        let response: Vec<LockAnalysisResponse> = make_request(agent, &uri, &query)?;
-
-        if response.is_empty() {
-            println!("No locks will be taken on {relation}");
-        } else {
-            for analysis in response {
-                display_analysis(analysis);
-            }
-        }
-    } else {
-        let response: Vec<LockAnalysisResponse> = make_request(agent, &base, &query)?;
-
-        if response.is_empty() {
-            println!("No locks were returned for this query");
-        }
-
-        for analysis in response {
-            display_analysis(analysis);
-        }
-    }
+    match response.len() {
+        0 => println!("No locks were returned for this query"),
+        _ => response.iter().for_each(display_analysis),
+    };
 
     Ok(())
 }
@@ -57,7 +43,7 @@ fn make_request<T: DeserializeOwned>(agent: Agent, uri: &str, query: &str) -> Re
     Ok(value)
 }
 
-fn display_analysis(analysis: LockAnalysisResponse) {
+fn display_analysis(analysis: &LockAnalysisResponse) {
     let LockAnalysisResponse {
         locktype,
         mode,
