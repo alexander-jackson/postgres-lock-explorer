@@ -4,3 +4,4 @@ members = [
 	"backend/connector",
 	"cli",
 ]
+resolver = "2"
