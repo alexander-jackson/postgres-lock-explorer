@@ -6,6 +6,28 @@ take on your Postgres database.
 This provides a simple API which takes a statement you'd like to be run and
 returns information about the lock that was taken.
 
+## Installation
+
+First, you'll need a Rust toolchain to compile the binary. You can run the
+following:
+
+```bash
+# Install the Rust installation manager
+brew install rustup-init
+
+# Hit Enter for the default installation configuration
+rustup-init
+
+# Install the stable version of Rust
+rustup update stable
+```
+
+This should give you the `cargo` binary:
+
+```bash
+cargo --version
+```
+
 ## Usage
 
 You'll need to run the server separately against a Postgres database for
