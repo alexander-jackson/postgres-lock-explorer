@@ -1,3 +1,4 @@
+use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input};
 use ureq::serde::de::DeserializeOwned;
@@ -38,9 +39,16 @@ fn make_request<T: DeserializeOwned>(agent: Agent, uri: &str, query: &str) -> Re
         query: query.to_string(),
     };
 
-    let value = agent.put(uri).send_json(&payload)?.into_json()?;
-
-    Ok(value)
+    match agent.put(uri).send_json(&payload) {
+        Ok(res) => Ok(res.into_json()?),
+        Err(ureq::Error::Status(code, response)) => {
+            return Err(eyre!(
+                "Invalid request (response code {code}): {}",
+                response.into_string()?
+            ));
+        }
+        Err(e) => return Err(e.into()),
+    }
 }
 
 fn display_analysis(analysis: &LockAnalysisResponse) {
