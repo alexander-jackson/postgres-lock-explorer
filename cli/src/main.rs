@@ -1,4 +1,6 @@
-use color_eyre::eyre::eyre;
+use std::borrow::Cow;
+
+use color_eyre::eyre::{eyre, Context};
 use color_eyre::Result;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input};
 use ureq::serde::de::DeserializeOwned;
@@ -24,7 +26,7 @@ fn main() -> Result<()> {
         false => base,
     };
 
-    let response: Vec<LockAnalysisResponse> = make_request(agent, &uri, &query)?;
+    let response: Vec<LockAnalysisResponse> = make_request(&agent, &uri, &query)?;
 
     match response.len() {
         0 => println!("No locks were returned for this query"),
@@ -34,20 +36,27 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn make_request<T: DeserializeOwned>(agent: Agent, uri: &str, query: &str) -> Result<T> {
+fn make_request<T: DeserializeOwned>(agent: &Agent, uri: &str, query: &str) -> Result<T> {
     let payload = LockAnalysisRequest {
         query: query.to_string(),
     };
 
     match agent.put(uri).send_json(&payload) {
-        Ok(res) => Ok(res.into_json()?),
-        Err(ureq::Error::Status(code, response)) => {
-            return Err(eyre!(
-                "Invalid request (response code {code}): {}",
-                response.into_string()?
-            ));
+        Ok(res) => {
+            let json = res
+                .into_json()
+                .wrap_err("failed to convert response body to JSON")?;
+
+            Ok(json)
         }
-        Err(e) => return Err(e.into()),
+        Err(ureq::Error::Status(code, response)) => {
+            let text = response
+                .into_string()
+                .wrap_err("failed to convert response body to a string")?;
+
+            Err(eyre!("Invalid request (response code {code}): {text}"))
+        }
+        Err(e) => Err(e.into()),
     }
 }
 
@@ -66,17 +75,19 @@ fn get_text(prompt: &str) -> Result<String> {
 
     let value = Input::with_theme(&theme)
         .with_prompt(prompt)
-        .interact_text()?;
+        .interact_text()
+        .wrap_err("failed to read input from prompt")?;
 
     Ok(value)
 }
 
-fn resolve_query_text(input: &str) -> Result<String> {
+fn resolve_query_text(input: &str) -> Result<Cow<'_, str>> {
     if let Some(filename) = input.strip_prefix("@") {
-        let content = std::fs::read_to_string(&filename)?;
+        let content = std::fs::read_to_string(&filename)
+            .wrap_err_with(|| format!("failed to read query from {filename}"))?;
 
-        return Ok(content);
+        return Ok(Cow::Owned(content));
     }
 
-    return Ok(input.to_string());
+    return Ok(Cow::Borrowed(input));
 }
