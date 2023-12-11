@@ -20,9 +20,9 @@ pub fn run() -> Result<()> {
         .with_prompt("Do you want to specify a relation?")
         .interact()?;
 
-    let base = format!("http://localhost:5430/locks");
+    let base = Cow::Borrowed("http://localhost:5430/locks");
     let uri = match with_relation {
-        true => format!("{base}/{}", get_text("Enter a relation")?),
+        true => Cow::Owned(format!("{base}/{}", get_text("Enter a relation")?)),
         false => base,
     };
 
@@ -41,7 +41,7 @@ fn make_request<T: DeserializeOwned>(agent: &Agent, uri: &str, query: &str) -> R
         query: query.to_string(),
     };
 
-    match agent.put(uri).send_json(&payload) {
+    match agent.put(uri).send_json(payload) {
         Ok(res) => {
             let json = res
                 .into_json()
@@ -82,8 +82,8 @@ fn get_text(prompt: &str) -> Result<String> {
 }
 
 fn resolve_query_text(input: &str) -> Result<Cow<'_, str>> {
-    if let Some(filename) = input.strip_prefix("@") {
-        let content = std::fs::read_to_string(&filename)
+    if let Some(filename) = input.strip_prefix('@') {
+        let content = std::fs::read_to_string(filename)
             .wrap_err_with(|| format!("failed to read query from {filename}"))?;
 
         return Ok(Cow::Owned(content));

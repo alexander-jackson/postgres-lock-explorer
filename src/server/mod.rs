@@ -50,8 +50,8 @@ async fn get_client(args: &Args) -> ServerResult<Client> {
 }
 
 pub async fn run(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
-    let left = get_client(&args).await?;
-    let right = get_client(&args).await?;
+    let left = get_client(args).await?;
+    let right = get_client(args).await?;
 
     let client = Arc::new(Mutex::new((left, right)));
 
