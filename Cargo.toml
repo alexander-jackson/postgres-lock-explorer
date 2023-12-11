@@ -7,7 +7,6 @@ edition = "2021"
 axum = "0.6.18"
 clap = { version = "4.4.11", features = ["derive"] }
 color-eyre = "0.6.2"
-dialoguer = { version = "0.10.4", default-features = false }
 serde = { version = "1.0.164", features = ["derive"] }
 tokio = { version = "1.28.2", features = ["macros", "rt-multi-thread"] }
 tokio-postgres = "0.7.8"
