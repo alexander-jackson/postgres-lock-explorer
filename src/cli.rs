@@ -6,9 +6,9 @@ use dialoguer::{theme::ColorfulTheme, Confirm, Input};
 use ureq::serde::de::DeserializeOwned;
 use ureq::Agent;
 
-use backend_connector::{LockAnalysisRequest, LockAnalysisResponse};
+use crate::types::{LockAnalysisRequest, LockAnalysisResponse};
 
-fn main() -> Result<()> {
+pub fn run() -> Result<()> {
     color_eyre::install()?;
 
     let agent = Agent::new();

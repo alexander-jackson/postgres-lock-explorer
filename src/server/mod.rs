@@ -3,17 +3,30 @@ use std::sync::Arc;
 
 use axum::routing::put;
 use axum::{Router, Server};
+use clap::Parser;
 use tokio::sync::Mutex;
 use tokio_postgres::{Client, Config, NoTls};
 
-mod args;
 mod endpoints;
 mod error;
 
-use crate::args::Args;
-use crate::error::ServerResult;
+use crate::server::error::ServerResult;
 
 type SharedClient = Arc<Mutex<(Client, Client)>>;
+
+#[derive(Debug, Parser)]
+pub struct Args {
+    #[arg(short, long)]
+    host: String,
+    #[arg(short = 'U', long)]
+    user: String,
+    #[arg(long)]
+    password: Option<String>,
+    #[arg(short, long)]
+    database: String,
+    #[arg(short = 'p', long = "port")]
+    database_port: Option<u16>,
+}
 
 async fn get_client(args: &Args) -> ServerResult<Client> {
     let mut config = Config::new();
@@ -21,9 +34,9 @@ async fn get_client(args: &Args) -> ServerResult<Client> {
     config
         .host(&args.host)
         .user(&args.user)
-        .password(&args.password)
+        .password(&args.password.clone().unwrap_or_default())
         .dbname(&args.database)
-        .port(args.database_port);
+        .port(args.database_port.unwrap_or(5432));
 
     let (client, conn) = config.connect(NoTls).await?;
 
@@ -36,10 +49,7 @@ async fn get_client(args: &Args) -> ServerResult<Client> {
     Ok(client)
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::from_env()?;
-
+pub async fn run(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let left = get_client(&args).await?;
     let right = get_client(&args).await?;
 

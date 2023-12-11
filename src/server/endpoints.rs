@@ -1,12 +1,12 @@
 use std::ops::DerefMut;
 
 use axum::extract::{Json, Path, State};
-use backend_connector::{LockAnalysisRequest, LockAnalysisResponse};
 use tokio_postgres::types::ToSql;
 use tokio_postgres::Client;
 
-use crate::error::ServerResult;
-use crate::SharedClient;
+use crate::server::error::ServerResult;
+use crate::server::SharedClient;
+use crate::types::{LockAnalysisRequest, LockAnalysisResponse};
 
 pub async fn analyse_locks_on_relation(
     State(state): State<SharedClient>,
