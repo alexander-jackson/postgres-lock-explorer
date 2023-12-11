@@ -16,15 +16,15 @@ type SharedClient = Arc<Mutex<(Client, Client)>>;
 
 #[derive(Debug, Parser)]
 pub struct Args {
-    #[arg(short, long)]
+    #[arg(short, long, help = "Host of the Postgres server to connect to")]
     host: String,
-    #[arg(short = 'U', long)]
+    #[arg(short = 'U', long, help = "User to connect to the server as")]
     user: String,
-    #[arg(long)]
+    #[arg(long, help = "Password to use when authenticating with the backend")]
     password: Option<String>,
-    #[arg(short, long)]
+    #[arg(short, long, help = "Name of the database to connect to")]
     database: String,
-    #[arg(short = 'p', long = "port")]
+    #[arg(short = 'p', long = "port", help = "Port that Postgres is running on")]
     database_port: Option<u16>,
 }
 

@@ -9,6 +9,6 @@ pub struct Args {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    Query,
+    Query(crate::cli::Args),
     Serve(crate::server::Args),
 }

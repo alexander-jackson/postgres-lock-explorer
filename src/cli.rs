@@ -1,20 +1,46 @@
 use std::borrow::Cow;
+use std::str::FromStr;
 
+use clap::Parser;
 use color_eyre::eyre::{eyre, Context};
-use color_eyre::Result;
+use color_eyre::{Report, Result};
 use dialoguer::{theme::ColorfulTheme, Confirm, Input};
 use ureq::serde::de::DeserializeOwned;
 use ureq::Agent;
 
 use crate::types::{LockAnalysisRequest, LockAnalysisResponse};
 
-pub fn run() -> Result<()> {
+#[derive(Clone, Debug)]
+struct Query(String);
+
+impl FromStr for Query {
+    type Err = Report;
+
+    fn from_str(value: &str) -> Result<Self> {
+        let inner = match value.strip_prefix('@') {
+            Some(path) => std::fs::read_to_string(path)
+                .wrap_err_with(|| format!("failed to read content from {path}"))?,
+            None => value.to_owned(),
+        };
+
+        Ok(Query(inner))
+    }
+}
+
+#[derive(Debug, Parser)]
+pub struct Args {
+    #[arg(
+        short = 'i',
+        long = "input",
+        help = "Query to run against the database, either as a string or a filepath prefixed with '@'"
+    )]
+    query: Query,
+}
+
+pub fn run(args: &Args) -> Result<()> {
     color_eyre::install()?;
 
     let agent = Agent::new();
-
-    let query = get_text("Enter a query")?;
-    let query = resolve_query_text(&query)?;
 
     let with_relation = Confirm::new()
         .with_prompt("Do you want to specify a relation?")
@@ -26,7 +52,7 @@ pub fn run() -> Result<()> {
         false => base,
     };
 
-    let response: Vec<LockAnalysisResponse> = make_request(&agent, &uri, &query)?;
+    let response: Vec<LockAnalysisResponse> = make_request(&agent, &uri, &args.query.0)?;
 
     match response.len() {
         0 => println!("No locks were returned for this query"),
@@ -79,15 +105,4 @@ fn get_text(prompt: &str) -> Result<String> {
         .wrap_err("failed to read input from prompt")?;
 
     Ok(value)
-}
-
-fn resolve_query_text(input: &str) -> Result<Cow<'_, str>> {
-    if let Some(filename) = input.strip_prefix('@') {
-        let content = std::fs::read_to_string(filename)
-            .wrap_err_with(|| format!("failed to read query from {filename}"))?;
-
-        return Ok(Cow::Owned(content));
-    }
-
-    return Ok(Cow::Borrowed(input));
 }

@@ -46,8 +46,7 @@ testing:
 You can then make requests to the server with the CLI:
 
 ```bash
-> pglx query
-✔ Enter a query · SELECT * FROM example
+> pglx query -i "SELECT * FROM example"
 Do you want to specify a relation? yes
 ✔ Enter a relation · example
 Lock of type 'relation' with mode 'AccessShareLock' will be taken on relation 'example'
@@ -56,8 +55,7 @@ Lock of type 'relation' with mode 'AccessShareLock' will be taken on relation 'e
 Or if you want to see the locks on all relations:
 
 ```bash
-> pglx query
-✔ Enter a query · ALTER TABLE other ADD CONSTRAINT fk_other_example_id FOREIGN KEY (example_id) REFERENCES example (id)
+> pglx query -i "ALTER TABLE other ADD CONSTRAINT fk_other_example_id FOREIGN KEY (example_id) REFERENCES example (id)"
 Do you want to specify a relation? no
 Lock of type 'relation' with mode 'AccessShareLock' will be taken on relation 'example'
 Lock of type 'relation' with mode 'RowShareLock' will be taken on relation 'example'
@@ -70,6 +68,5 @@ Lock of type 'relation' with mode 'ShareRowExclusiveLock' will be taken on relat
 You can also read the query from a file:
 
 ```bash
-> pglx query
-✔ Enter a query · @query.sql
+> pglx query -i @query.sql
 ```
