@@ -7,6 +7,7 @@ use tracing_subscriber::EnvFilter;
 
 mod args;
 mod cli;
+mod explain;
 mod server;
 mod types;
 
@@ -37,6 +38,7 @@ async fn main() -> Result<()> {
     match args.command {
         Command::Query(args) => crate::cli::run(&args)?,
         Command::Serve(args) => crate::server::run(&args).await.unwrap(),
+        Command::Explain(args) => crate::explain::run(&args),
     };
 
     Ok(())

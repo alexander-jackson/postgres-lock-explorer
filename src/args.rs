@@ -11,4 +11,5 @@ pub struct Args {
 pub enum Command {
     Query(crate::cli::Args),
     Serve(crate::server::Args),
+    Explain(crate::explain::Args),
 }
