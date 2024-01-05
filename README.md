@@ -40,7 +40,18 @@ You'll need to run the server separately against a Postgres database for
 testing:
 
 ```bash
-> pglx serve -h localhost -U postgres -d testing
+> pglx serve --help
+Usage: pglx serve [OPTIONS] --host <HOST> --user <USER> --database <DATABASE>
+
+Options:
+  -h, --host <HOST>           Hostname of the database server
+  -U, --user <USER>           Username for connecting to the database server
+      --password <PASSWORD>   Password for connecting to the database server
+  -d, --database <DATABASE>   Name of the database to connect to
+  -p, --port <DATABASE_PORT>  Port of the database server
+  -h, --help                  Print help
+
+> pglx serve -h localhost -U postgres -d testing --password test
 ```
 
 You can then make requests to the server with the CLI:
