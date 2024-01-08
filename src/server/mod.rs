@@ -73,6 +73,8 @@ pub async fn run(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, args.server_port.unwrap_or(5430));
     let listener = TcpListener::bind(&addr).await?;
 
+    tracing::info!(%addr, "Listening for incoming requests");
+
     axum::serve(listener, router.into_make_service()).await?;
 
     Ok(())

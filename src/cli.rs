@@ -40,8 +40,6 @@ pub struct Args {
 }
 
 pub fn run(args: &Args) -> Result<()> {
-    color_eyre::install()?;
-
     let agent = Agent::new();
 
     let server_port = args.server_port.unwrap_or(5430);

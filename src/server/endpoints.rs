@@ -16,6 +16,7 @@ pub async fn analyse_locks_on_relation(
     let mut client = state.lock().await;
     let (ref mut left, ref right) = client.deref_mut();
 
+    let query = &req.query;
     let lock_query = r#"
         SELECT pl.locktype, pl.mode, pc.relname
         FROM pg_locks pl
@@ -25,14 +26,9 @@ pub async fn analyse_locks_on_relation(
         AND pc.relname = $2
     "#;
 
-    let locks = inspect_locks(
-        left,
-        right,
-        &req.query,
-        lock_query,
-        &[&req.query, &relation],
-    )
-    .await?;
+    tracing::info!(?query, ?relation, "Analysing locks on a specific relation");
+
+    let locks = inspect_locks(left, right, query, lock_query, &[query, &relation]).await?;
 
     Ok(Json(locks))
 }
@@ -44,6 +40,7 @@ pub async fn analyse_all_locks(
     let mut client = state.lock().await;
     let (ref mut left, ref right) = client.deref_mut();
 
+    let query = &req.query;
     let lock_query = r#"
         SELECT pl.locktype, pl.mode, pc.relname
         FROM pg_locks pl
@@ -53,7 +50,9 @@ pub async fn analyse_all_locks(
         ORDER BY pc.relname, pl.mode
     "#;
 
-    let locks = inspect_locks(left, right, &req.query, lock_query, &[&req.query]).await?;
+    tracing::info!(?query, "Analysing all locks");
+
+    let locks = inspect_locks(left, right, query, lock_query, &[query]).await?;
 
     Ok(Json(locks))
 }
