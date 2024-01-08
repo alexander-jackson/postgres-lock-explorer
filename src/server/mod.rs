@@ -2,8 +2,9 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 use std::sync::Arc;
 
 use axum::routing::put;
-use axum::{Router, Server};
+use axum::Router;
 use clap::Parser;
+use tokio::net::TcpListener;
 use tokio::sync::Mutex;
 use tokio_postgres::{Client, Config, NoTls};
 
@@ -67,10 +68,10 @@ pub async fn run(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
         .route("/locks", put(endpoints::analyse_all_locks))
         .with_state(client);
 
-    let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 5430).into();
+    let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 5430);
+    let listener = TcpListener::bind(&addr).await?;
 
-    let server = Server::bind(&addr).serve(router.into_make_service());
-    server.await?;
+    axum::serve(listener, router.into_make_service()).await?;
 
     Ok(())
 }

@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = "0.6.18"
-clap = { version = "4.4.11", features = ["derive"] }
+axum = "0.7.3"
+clap = { version = "4.4.13", features = ["derive"] }
 color-eyre = "0.6.2"
-serde = { version = "1.0.164", features = ["derive"] }
-tokio = { version = "1.28.2", features = ["macros", "rt-multi-thread"] }
-tokio-postgres = "0.7.8"
-ureq = { version = "2.7.1", features = ["json"], default-features = false }
+serde = { version = "1.0.195", features = ["derive"] }
+tokio = { version = "1.35.1", features = ["macros", "rt-multi-thread"] }
+tokio-postgres = "0.7.10"
+ureq = { version = "2.8.0", features = ["json"], default-features = false }
