@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::str::FromStr;
 
 use clap::Parser;
@@ -36,16 +35,20 @@ pub struct Args {
     query: Query,
     #[arg(short = 'r', long = "relation", help = "Relation to filter locks for")]
     relation: Option<String>,
+    #[arg(long, help = "Port that the lock analysis server is running on")]
+    server_port: Option<u16>,
 }
 
 pub fn run(args: &Args) -> Result<()> {
     color_eyre::install()?;
 
     let agent = Agent::new();
-    let base = Cow::Borrowed("http://localhost:5430/locks");
+
+    let server_port = args.server_port.unwrap_or(5430);
+    let base = format!("http://localhost:{server_port}/locks");
 
     let uri = match args.relation.as_ref() {
-        Some(value) => Cow::Owned(format!("{base}/{value}")),
+        Some(value) => format!("{base}/{value}"),
         None => base,
     };
 

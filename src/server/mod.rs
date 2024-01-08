@@ -31,6 +31,8 @@ pub struct Args {
     database: String,
     #[arg(short = 'p', long = "port", help = "Port of the database server")]
     database_port: Option<u16>,
+    #[arg(long, help = "Port to run the server itself on")]
+    server_port: Option<u16>,
 }
 
 async fn get_client(args: &Args) -> ServerResult<Client> {
@@ -68,7 +70,7 @@ pub async fn run(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
         .route("/locks", put(endpoints::analyse_all_locks))
         .with_state(client);
 
-    let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, 5430);
+    let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, args.server_port.unwrap_or(5430));
     let listener = TcpListener::bind(&addr).await?;
 
     axum::serve(listener, router.into_make_service()).await?;
