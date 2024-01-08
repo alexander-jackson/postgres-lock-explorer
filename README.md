@@ -44,7 +44,7 @@ testing:
 Usage: pglx serve [OPTIONS] --host <HOST> --user <USER> --database <DATABASE>
 
 Options:
-  -h, --host <HOST>                Hostname of the database server
+      --host <HOST>                Hostname of the database server
   -U, --user <USER>                Username for connecting to the database server
       --password <PASSWORD>        Password for connecting to the database server
   -d, --database <DATABASE>        Name of the database to connect to

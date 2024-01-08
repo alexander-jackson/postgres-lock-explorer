@@ -17,7 +17,7 @@ type SharedClient = Arc<Mutex<(Client, Client)>>;
 
 #[derive(Debug, Parser)]
 pub struct Args {
-    #[arg(short, long, help = "Hostname of the database server")]
+    #[arg(long, help = "Hostname of the database server")]
     host: String,
     #[arg(
         short = 'U',
