@@ -44,12 +44,13 @@ testing:
 Usage: pglx serve [OPTIONS] --host <HOST> --user <USER> --database <DATABASE>
 
 Options:
-  -h, --host <HOST>           Hostname of the database server
-  -U, --user <USER>           Username for connecting to the database server
-      --password <PASSWORD>   Password for connecting to the database server
-  -d, --database <DATABASE>   Name of the database to connect to
-  -p, --port <DATABASE_PORT>  Port of the database server
-  -h, --help                  Print help
+  -h, --host <HOST>                Hostname of the database server
+  -U, --user <USER>                Username for connecting to the database server
+      --password <PASSWORD>        Password for connecting to the database server
+  -d, --database <DATABASE>        Name of the database to connect to
+  -p, --port <DATABASE_PORT>       Port of the database server
+      --server-port <SERVER_PORT>  Port to run the server itself on
+  -h, --help                       Print help
 
 > pglx serve -h localhost -U postgres -d testing --password test
 ```
