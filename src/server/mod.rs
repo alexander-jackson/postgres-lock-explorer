@@ -18,7 +18,7 @@ type SharedClient = Arc<Mutex<(Client, Client)>>;
 #[derive(Debug, Parser)]
 pub struct Args {
     #[arg(long, help = "Hostname of the database server")]
-    host: String,
+    host: Option<String>,
     #[arg(
         short = 'U',
         long,
@@ -39,7 +39,7 @@ async fn get_client(args: &Args) -> ServerResult<Client> {
     let mut config = Config::new();
 
     config
-        .host(&args.host)
+        .host(args.host.as_deref().unwrap_or("localhost"))
         .user(&args.user)
         .password(&args.password.clone().unwrap_or_default())
         .dbname(&args.database)

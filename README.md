@@ -41,7 +41,7 @@ testing:
 
 ```bash
 > pglx serve --help
-Usage: pglx serve [OPTIONS] --host <HOST> --user <USER> --database <DATABASE>
+Usage: pglx serve [OPTIONS] --user <USER> --database <DATABASE>
 
 Options:
       --host <HOST>                Hostname of the database server
@@ -52,7 +52,7 @@ Options:
       --server-port <SERVER_PORT>  Port to run the server itself on
   -h, --help                       Print help
 
-> pglx serve -h localhost -U postgres -d testing --password test
+> pglx serve -U postgres -d testing --password test
 ```
 
 You can then make requests to the server with the CLI:
