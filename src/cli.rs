@@ -35,22 +35,20 @@ pub struct Args {
     query: Query,
     #[arg(short = 'r', long = "relation", help = "Relation to filter locks for")]
     relation: Option<String>,
+    #[arg(short = 's', long = "schema", help = "Schema to filter locks for")]
+    schema: Option<String>,
     #[arg(long, help = "Port that the lock analysis server is running on")]
     server_port: Option<u16>,
 }
 
-pub fn run(args: &Args) -> Result<()> {
+pub fn run(args: Args) -> Result<()> {
     let agent = Agent::new();
 
     let server_port = args.server_port.unwrap_or(5430);
     let base = format!("http://localhost:{server_port}/locks");
 
-    let uri = match args.relation.as_ref() {
-        Some(value) => format!("{base}/{value}"),
-        None => base,
-    };
-
-    let response: Vec<LockAnalysisResponse> = make_request(&agent, &uri, &args.query.0)?;
+    let response: Vec<LockAnalysisResponse> =
+        make_request(&agent, &base, &args.query.0, args.schema, args.relation)?;
 
     match response.len() {
         0 => println!("No locks were returned for this query"),
@@ -60,9 +58,17 @@ pub fn run(args: &Args) -> Result<()> {
     Ok(())
 }
 
-fn make_request<T: DeserializeOwned>(agent: &Agent, uri: &str, query: &str) -> Result<T> {
+fn make_request<T: DeserializeOwned>(
+    agent: &Agent,
+    uri: &str,
+    query: &str,
+    schema: Option<String>,
+    relation: Option<String>,
+) -> Result<T> {
     let payload = LockAnalysisRequest {
         query: query.to_string(),
+        schema,
+        relation,
     };
 
     match agent.put(uri).send_json(payload) {
@@ -88,8 +94,9 @@ fn display_analysis(analysis: &LockAnalysisResponse) {
     let LockAnalysisResponse {
         locktype,
         mode,
+        schema,
         relation,
     } = analysis;
 
-    println!("Lock of type '{locktype}' with mode '{mode}' will be taken on relation '{relation}'")
+    println!("Lock of type '{locktype}' with mode '{mode}' will be taken on relation '{schema}.{relation}'")
 }

@@ -37,7 +37,7 @@ async fn main() -> Result<()> {
     let args = Args::parse();
 
     match args.command {
-        Command::Query(args) => crate::cli::run(&args)?,
+        Command::Query(args) => crate::cli::run(args)?,
         Command::Serve(args) => crate::server::run(&args).await.unwrap(),
         Command::Explain(args) => crate::explain::run(&args)?,
     };

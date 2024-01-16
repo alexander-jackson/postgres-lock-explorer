@@ -1,6 +1,6 @@
 use std::ops::DerefMut;
 
-use axum::extract::{Json, Path, State};
+use axum::extract::{Json, State};
 use tokio_postgres::types::ToSql;
 use tokio_postgres::Client;
 
@@ -8,51 +8,34 @@ use crate::server::error::ServerResult;
 use crate::server::SharedClient;
 use crate::types::{LockAnalysisRequest, LockAnalysisResponse};
 
-pub async fn analyse_locks_on_relation(
-    State(state): State<SharedClient>,
-    Path(relation): Path<String>,
-    Json(req): Json<LockAnalysisRequest>,
-) -> ServerResult<Json<Vec<LockAnalysisResponse>>> {
-    let mut client = state.lock().await;
-    let (ref mut left, ref right) = client.deref_mut();
-
-    let query = &req.query;
-    let lock_query = r#"
-        SELECT pl.locktype, pl.mode, pc.relname
-        FROM pg_locks pl
-        JOIN pg_stat_activity psa ON pl.pid = psa.pid
-        JOIN pg_class pc ON pc.oid = pl.relation
-        WHERE psa.query = $1
-        AND pc.relname = $2
-    "#;
-
-    tracing::info!(?query, ?relation, "Analysing locks on a specific relation");
-
-    let locks = inspect_locks(left, right, query, lock_query, &[query, &relation]).await?;
-
-    Ok(Json(locks))
-}
-
-pub async fn analyse_all_locks(
+pub async fn analyse_locks(
     State(state): State<SharedClient>,
     Json(req): Json<LockAnalysisRequest>,
 ) -> ServerResult<Json<Vec<LockAnalysisResponse>>> {
     let mut client = state.lock().await;
     let (ref mut left, ref right) = client.deref_mut();
 
-    let query = &req.query;
+    let LockAnalysisRequest {
+        query,
+        schema,
+        relation,
+    } = &req;
+
     let lock_query = r#"
-        SELECT pl.locktype, pl.mode, pc.relname
+        SELECT pl.locktype, pl.mode, pn.nspname, pc.relname
         FROM pg_locks pl
         JOIN pg_stat_activity psa ON pl.pid = psa.pid
         JOIN pg_class pc ON pc.oid = pl.relation
+        JOIN pg_namespace pn ON pn.oid = pc.relnamespace
         WHERE psa.query = $1
+        AND ($2::TEXT IS NULL OR pn.nspname = $2)
+        AND ($3::TEXT IS NULL OR pc.relname = $3)
         ORDER BY pc.relname, pl.mode
     "#;
 
     tracing::info!(?query, "Analysing all locks");
 
-    let locks = inspect_locks(left, right, query, lock_query, &[query]).await?;
+    let locks = inspect_locks(left, right, query, lock_query, &[query, schema, relation]).await?;
 
     Ok(Json(locks))
 }
@@ -78,7 +61,8 @@ async fn inspect_locks(
         .map(|row| LockAnalysisResponse {
             locktype: row.get(0),
             mode: row.get(1),
-            relation: row.get(2),
+            schema: row.get(2),
+            relation: row.get(3),
         })
         .collect();
 

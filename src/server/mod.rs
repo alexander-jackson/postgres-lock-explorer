@@ -64,11 +64,7 @@ pub async fn run(args: &Args) -> Result<()> {
     let client = Arc::new(Mutex::new((left, right)));
 
     let router = Router::new()
-        .route(
-            "/locks/:relation",
-            put(endpoints::analyse_locks_on_relation),
-        )
-        .route("/locks", put(endpoints::analyse_all_locks))
+        .route("/locks", put(endpoints::analyse_locks))
         .with_state(client);
 
     let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, args.server_port.unwrap_or(5430));
