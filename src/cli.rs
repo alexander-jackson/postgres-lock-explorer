@@ -3,7 +3,6 @@ use std::str::FromStr;
 use clap::Parser;
 use color_eyre::eyre::{eyre, Context};
 use color_eyre::{Report, Result};
-use ureq::serde::de::DeserializeOwned;
 use ureq::Agent;
 
 use crate::types::{LockAnalysisRequest, LockAnalysisResponse};
@@ -47,8 +46,7 @@ pub fn run(args: Args) -> Result<()> {
     let server_port = args.server_port.unwrap_or(5430);
     let base = format!("http://localhost:{server_port}/locks");
 
-    let response: Vec<LockAnalysisResponse> =
-        make_request(&agent, &base, args.query.0, args.schema, args.relation)?;
+    let response = make_request(&agent, &base, args.query.0, args.schema, args.relation)?;
 
     match response.len() {
         0 => println!("No locks were returned for this query"),
@@ -58,13 +56,13 @@ pub fn run(args: Args) -> Result<()> {
     Ok(())
 }
 
-fn make_request<T: DeserializeOwned>(
+fn make_request(
     agent: &Agent,
     uri: &str,
     query: String,
     schema: Option<String>,
     relation: Option<String>,
-) -> Result<T> {
+) -> Result<Vec<LockAnalysisResponse>> {
     let payload = LockAnalysisRequest {
         query,
         schema,
