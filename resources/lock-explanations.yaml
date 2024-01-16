@@ -1,0 +1,76 @@
+AccessShareLock:
+  conflicts:
+    - AccessExclusiveLock
+  examples:
+    - SELECT id FROM account
+
+RowShareLock:
+  conflicts:
+    - ExclusiveLock
+    - AccessExclusiveLock
+  examples:
+    - SELECT FOR UPDATE id FROM account
+
+RowExclusiveLock:
+  conflicts:
+    - ShareLock
+    - ShareRowExclusiveLock
+    - ExclusiveLock
+    - AccessExclusiveLock
+  examples:
+    - UPDATE payment SET cancelled_at = now()::timestamp
+
+ShareUpdateExclusiveLock:
+  conflicts:
+    - ShareUpdateExclusiveLock
+    - ShareLock
+    - ShareRowExclusiveLock
+    - ExclusiveLock
+    - AccessExclusiveLock
+  examples:
+    - CREATE INDEX CONCURRENTLY idx_account_account_uid ON account (account_uid)
+
+ShareLock:
+  conflicts:
+    - RowExclusiveLock
+    - ShareUpdateExclusiveLock
+    - ShareRowExclusiveLock
+    - ExclusiveLock
+    - AccessExclusiveLock
+  examples:
+    - CREATE INDEX idx_account_account_uid ON account (account_uid)
+
+ShareRowExclusiveLock:
+  conflicts:
+    - RowExclusiveLock
+    - ShareUpdateExclusiveLock
+    - ShareLock
+    - ShareRowExclusiveLock
+    - ExclusiveLock
+    - AccessExclusiveLock
+  examples:
+    - CREATE TRIGGER check_update BEFORE UPDATE ON account FOR EACH ROW EXECUTE FUNCTION check_account_update()
+
+ExclusiveLock:
+  conflicts:
+    - RowShareLock
+    - RowExclusiveLock
+    - ShareUpdateExclusiveLock
+    - ShareLock
+    - ShareRowExclusiveLock
+    - ExclusiveLock
+    - AccessExclusiveLock
+  examples:
+    - REFRESH MATERIALIZED VIEW CONCURRENTLY password_statistics
+
+AccessExclusiveLock:
+  conflicts:
+    - AccessShareLock
+    - RowShareLock
+    - RowExclusiveLock
+    - ShareUpdateExclusiveLock
+    - ShareLock
+    - ShareRowExclusiveLock
+    - ExclusiveLock
+  examples:
+    - ALTER TABLE account ADD COLUMN name TEXT

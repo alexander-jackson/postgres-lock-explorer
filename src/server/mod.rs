@@ -4,6 +4,7 @@ use std::sync::Arc;
 use axum::routing::put;
 use axum::Router;
 use clap::Parser;
+use color_eyre::eyre::Result;
 use tokio::net::TcpListener;
 use tokio::sync::Mutex;
 use tokio_postgres::{Client, Config, NoTls};
@@ -56,7 +57,7 @@ async fn get_client(args: &Args) -> ServerResult<Client> {
     Ok(client)
 }
 
-pub async fn run(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn run(args: &Args) -> Result<()> {
     let left = get_client(args).await?;
     let right = get_client(args).await?;
 
