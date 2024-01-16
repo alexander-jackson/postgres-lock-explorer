@@ -57,9 +57,9 @@ async fn get_client(args: &Args) -> ServerResult<Client> {
     Ok(client)
 }
 
-pub async fn run(args: &Args) -> Result<()> {
-    let left = get_client(args).await?;
-    let right = get_client(args).await?;
+pub async fn run(args: Args) -> Result<()> {
+    let left = get_client(&args).await?;
+    let right = get_client(&args).await?;
 
     let client = Arc::new(Mutex::new((left, right)));
 

@@ -38,8 +38,8 @@ async fn main() -> Result<()> {
 
     match args.command {
         Command::Query(args) => crate::cli::run(args)?,
-        Command::Serve(args) => crate::server::run(&args).await.unwrap(),
-        Command::Explain(args) => crate::explain::run(&args)?,
+        Command::Serve(args) => crate::server::run(args).await.unwrap(),
+        Command::Explain(args) => crate::explain::run(args)?,
     };
 
     Ok(())

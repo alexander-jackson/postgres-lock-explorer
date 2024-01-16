@@ -48,7 +48,7 @@ pub fn run(args: Args) -> Result<()> {
     let base = format!("http://localhost:{server_port}/locks");
 
     let response: Vec<LockAnalysisResponse> =
-        make_request(&agent, &base, &args.query.0, args.schema, args.relation)?;
+        make_request(&agent, &base, args.query.0, args.schema, args.relation)?;
 
     match response.len() {
         0 => println!("No locks were returned for this query"),
@@ -61,12 +61,12 @@ pub fn run(args: Args) -> Result<()> {
 fn make_request<T: DeserializeOwned>(
     agent: &Agent,
     uri: &str,
-    query: &str,
+    query: String,
     schema: Option<String>,
     relation: Option<String>,
 ) -> Result<T> {
     let payload = LockAnalysisRequest {
-        query: query.to_string(),
+        query,
         schema,
         relation,
     };

@@ -43,7 +43,7 @@ pub struct Args {
     lock: Lock,
 }
 
-pub fn run(args: &Args) -> Result<()> {
+pub fn run(args: Args) -> Result<()> {
     let lock = args.lock;
 
     let content = include_str!("../resources/lock-explanations.yaml");
