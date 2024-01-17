@@ -36,6 +36,8 @@ cargo install --git https://github.com/alexander-jackson/postgres-lock-explorer.
 
 ## Usage
 
+### Running the server
+
 You'll need to run the server separately against a Postgres database for
 testing:
 
@@ -54,6 +56,8 @@ Options:
 
 > pglx serve -U postgres -d testing --password test
 ```
+
+### Making queries
 
 You can then make requests to the server with the CLI:
 
@@ -84,4 +88,32 @@ You can also read the query from a file:
 
 ```bash
 > pglx query -i @query.sql
+```
+
+### Lock explanations
+
+`pglx` also comes with some documentation about the different lock types and
+their implications:
+
+```bash
+> pglx explain RowExclusiveLock
+RowExclusiveLock
+
+Conflicts with:
+- ShareLock
+- ShareRowExclusiveLock
+- ExclusiveLock
+- AccessExclusiveLock
+
+Example queries acquiring this lock type:
+- UPDATE payment SET status = 'COMPLETED'
+- INSERT INTO payment (amount, currency) VALUES (25, 'GBP')
+- DELETE FROM payment WHERE payment_id = 1
+
+Example queries blocked by this lock type:
+- CREATE INDEX idx_account_account_uid ON account (account_uid)
+- CREATE TRIGGER check_update BEFORE UPDATE ON account FOR EACH ROW EXECUTE FUNCTION check_account_update()
+- REFRESH MATERIALIZED VIEW CONCURRENTLY password_statistics
+- ALTER TABLE account ADD COLUMN name TEXT
+- DROP TABLE account
 ```
