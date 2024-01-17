@@ -19,6 +19,8 @@ RowExclusiveLock:
     - AccessExclusiveLock
   examples:
     - UPDATE payment SET status = 'COMPLETED'
+    - INSERT INTO payment (amount, currency) VALUES (25, 'GBP')
+    - DELETE FROM payment WHERE payment_id = 1
 
 ShareUpdateExclusiveLock:
   conflicts:
@@ -29,6 +31,8 @@ ShareUpdateExclusiveLock:
     - AccessExclusiveLock
   examples:
     - CREATE INDEX CONCURRENTLY idx_account_account_uid ON account (account_uid)
+    - REINDEX INDEX CONCURRENTLY idx_account_account_uid
+    - ANALYZE account
 
 ShareLock:
   conflicts:
@@ -74,3 +78,4 @@ AccessExclusiveLock:
     - ExclusiveLock
   examples:
     - ALTER TABLE account ADD COLUMN name TEXT
+    - DROP TABLE account
