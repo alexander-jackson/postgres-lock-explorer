@@ -6,6 +6,6 @@ Conflicts with:
 Example queries acquiring this lock type:
 {% for example in examples %}- {{ example }}
 {% endfor %}
-Examples queries blocked by this lock type:
+Example queries blocked by this lock type:
 {% for example in blocked_examples %}- {{ example }}
 {% endfor %}
