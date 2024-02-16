@@ -38,19 +38,37 @@ impl FromStr for Lock {
     type Err = Report;
 
     fn from_str(value: &str) -> Result<Self> {
-        let lock = match value {
-            "AccessShareLock" => Lock::AccessShareLock,
-            "RowShareLock" => Lock::RowShareLock,
-            "RowExclusiveLock" => Lock::RowExclusiveLock,
-            "ShareUpdateExclusiveLock" => Lock::ShareUpdateExclusiveLock,
-            "ShareLock" => Lock::ShareLock,
-            "ShareRowExclusiveLock" => Lock::ShareRowExclusiveLock,
-            "ExclusiveLock" => Lock::ExclusiveLock,
-            "AccessExclusiveLock" => Lock::AccessExclusiveLock,
-            _ => return Err(eyre!("invalid lock type {value}")),
-        };
+       match value {
+            "AccessShareLock" => Ok(Lock::AccessShareLock),
+            "RowShareLock" => Ok(Lock::RowShareLock),
+            "RowExclusiveLock" => Ok(Lock::RowExclusiveLock),
+            "ShareUpdateExclusiveLock" => Ok(Lock::ShareUpdateExclusiveLock),
+            "ShareLock" => Ok(Lock::ShareLock),
+            "ShareRowExclusiveLock" => Ok(Lock::ShareRowExclusiveLock),
+            "ExclusiveLock" => Ok(Lock::ExclusiveLock),
+            "AccessExclusiveLock" => Ok(Lock::AccessExclusiveLock),
+            _ => {
+                let normalised = value.to_lowercase().replace(" ", "");
 
-        Ok(lock)
+                let normalised = if !normalised.ends_with("lock") {
+                    normalised + "lock"
+                } else {
+                    normalised
+                };
+
+                match normalised.as_str() {
+                    "accesssharelock" => Ok(Lock::AccessShareLock),
+                    "rowsharelock" => Ok(Lock::RowShareLock),
+                    "rowexclusivelock" => Ok(Lock::RowExclusiveLock),
+                    "shareupdateexclusivelock" => Ok(Lock::ShareUpdateExclusiveLock),
+                    "sharelock" => Ok(Lock::ShareLock),
+                    "sharerowexclusivelock" => Ok(Lock::ShareRowExclusiveLock),
+                    "exclusivelock" => Ok(Lock::ExclusiveLock),
+                    "accessexclusivelock" => Ok(Lock::AccessExclusiveLock),
+                    _ => return Err(eyre!("invalid lock type {normalised}")),
+                }
+            },
+        }
     }
 }
 
