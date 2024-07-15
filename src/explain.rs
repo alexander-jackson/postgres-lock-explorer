@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use clap::Parser;
 use color_eyre::eyre::eyre;
@@ -28,11 +29,12 @@ struct Explanation {
 
 #[derive(Debug, Parser)]
 pub struct Args {
-    lock: Lock,
+    lock: Vec<String>,
 }
 
 pub fn run(args: Args) -> Result<()> {
-    let lock = args.lock;
+    let lock = args.lock.join(" ");
+    let lock = Lock::from_str(&lock)?;
 
     let content = include_str!("../resources/lock-explanations.yaml");
     let explanations: HashMap<Lock, Explanation> = serde_yaml::from_str(content)?;
