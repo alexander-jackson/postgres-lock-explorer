@@ -39,14 +39,22 @@ impl FromStr for Lock {
 
     fn from_str(value: &str) -> Result<Self> {
         let lock = match value {
-            "AccessShareLock" => Lock::AccessShareLock,
-            "RowShareLock" => Lock::RowShareLock,
-            "RowExclusiveLock" => Lock::RowExclusiveLock,
-            "ShareUpdateExclusiveLock" => Lock::ShareUpdateExclusiveLock,
-            "ShareLock" => Lock::ShareLock,
-            "ShareRowExclusiveLock" => Lock::ShareRowExclusiveLock,
-            "ExclusiveLock" => Lock::ExclusiveLock,
-            "AccessExclusiveLock" => Lock::AccessExclusiveLock,
+            "AccessShareLock" | "AccessShare" | "ACCESS SHARE" => Self::AccessShareLock,
+            "RowShareLock" | "RowShare" | "ROW SHARE" => Self::RowShareLock,
+            "RowExclusiveLock" | "RowExclusive" | "ROW EXCLUSIVE" => Self::RowExclusiveLock,
+            "ShareUpdateExclusiveLock" | "ShareUpdateExclusive" | "SHARE UPDATE EXCLUSIVE" => {
+                Self::ShareUpdateExclusiveLock
+            }
+            "ShareLock" | "Share" | "SHARE" => Self::ShareLock,
+
+            "ShareRowExclusiveLock" | "ShareRowExclusive" | "SHARE ROW EXCLUSIVE" => {
+                Self::ShareRowExclusiveLock
+            }
+            "ExclusiveLock" | "Exclusive" | "EXCLUSIVE" => Self::ExclusiveLock,
+            "AccessExclusiveLock" | "AccessExclusive" | "ACCESS EXCLUSIVE" => {
+                Self::AccessExclusiveLock
+            }
+
             _ => return Err(eyre!("invalid lock type {value}")),
         };
 
@@ -61,7 +69,7 @@ impl FromSql<'_> for Lock {
     ) -> Result<Self, Box<dyn std::error::Error + Sync + Send>> {
         // &str supports both VARCHAR and TEXT, so this should always work
         let parsed: &str = FromSql::from_sql(ty, raw)?;
-        let lock = Lock::from_str(parsed)?;
+        let lock = Self::from_str(parsed)?;
 
         Ok(lock)
     }
@@ -71,5 +79,27 @@ impl FromSql<'_> for Lock {
             Type::VARCHAR | Type::TEXT => true,
             _ => false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use color_eyre::eyre::Result;
+    use rstest::rstest;
+
+    use crate::lock::Lock;
+
+    #[rstest]
+    #[case::postgres_syntax("AccessShareLock", Lock::AccessShareLock)]
+    #[case::without_lock_suffix("AccessShare", Lock::AccessShareLock)]
+    #[case::explicit_acquiry("ACCESS SHARE", Lock::AccessShareLock)]
+    fn can_parse_lock_types(#[case] input: &str, #[case] expected: Lock) -> Result<()> {
+        let actual = Lock::from_str(input)?;
+
+        assert_eq!(actual, expected);
+
+        Ok(())
     }
 }
