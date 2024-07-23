@@ -49,7 +49,7 @@ async fn inspect_locks(
 ) -> ServerResult<Vec<LockAnalysisResponse>> {
     // Begin a transaction
     let transaction = left.transaction().await?;
-    transaction.query(query, &[]).await?;
+    transaction.simple_query(query).await?;
 
     // Use the other connection to inspect the locks
     let locks = right.query(lock_query, lock_query_params).await?;
