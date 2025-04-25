@@ -11,15 +11,20 @@
     "preview": "rsbuild preview"
   },
   "dependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "root": "github:tanstack/react-query"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@rsbuild/core": "^1.3.1",
     "@rsbuild/plugin-react": "^1.1.1",
+    "@tailwindcss/postcss": "^4.1.4",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.1",
+    "tailwindcss": "^4.1.4",
     "typescript": "^5.8.2"
   }
 }
