@@ -11,11 +11,12 @@
     "preview": "rsbuild preview"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.74.4",
     "autoprefixer": "^10.4.21",
+    "axios": "^1.9.0",
     "postcss": "^8.5.3",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "root": "github:tanstack/react-query"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

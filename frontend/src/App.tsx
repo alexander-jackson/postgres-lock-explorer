@@ -1,6 +1,24 @@
 import './App.css';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 
 const App = () => {
+  const [query, setQuery] = useState('');
+
+  const { data: results, isLoading, isError } = useQuery({
+    queryKey: ['locks', query],
+    queryFn: async () => {
+      const response = await axios.put('http://localhost:5430/locks', {
+        query,
+        schema: null,
+        relation: null,
+      });
+      return response.data;
+    },
+    enabled: !!query, // Only fetch when query is not empty
+  });
+
   return (
     <div className="flex h-screen">
       <div className="w-1/2 p-4 border-r border-gray-300">
@@ -8,13 +26,27 @@ const App = () => {
         <textarea
           className="w-full h-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Write your SQL query here..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
         ></textarea>
       </div>
 
       <div className="w-1/2 p-4">
         <h2 className="text-xl font-bold mb-4">Results</h2>
         <div className="h-full border rounded p-2 overflow-auto">
-          <p className="text-gray-500">Results will be displayed here.</p>
+          {isLoading && <p className="text-gray-500">Loading...</p>}
+          {isError && <p className="text-red-500">Error fetching results.</p>}
+          {results && results.length > 0 ? (
+            <ul>
+              {results.map((result, index) => (
+                <li key={index} className="mb-2">
+                  Lock of type '{result.locktype}' with mode '{result.mode}' on relation '{result.schema}.{result.relation}'
+                </li>
+              ))}
+            </ul>
+          ) : (
+            !isLoading && <p className="text-gray-500">No results to display.</p>
+          )}
         </div>
       </div>
     </div>
