@@ -8,6 +8,7 @@ use color_eyre::eyre::Result;
 use tokio::net::TcpListener;
 use tokio::sync::Mutex;
 use tokio_postgres::{Client, Config, NoTls};
+use tower_http::cors::{Any, CorsLayer};
 
 mod endpoints;
 mod error;
@@ -63,9 +64,15 @@ pub async fn run(args: Args) -> Result<()> {
 
     let client = Arc::new(Mutex::new((left, right)));
 
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
     let router = Router::new()
         .route("/locks", put(endpoints::analyse_locks))
-        .with_state(client);
+        .with_state(client)
+        .layer(cors);
 
     let addr = SocketAddrV4::new(Ipv4Addr::LOCALHOST, args.server_port.unwrap_or(5430));
     let listener = TcpListener::bind(&addr).await?;
