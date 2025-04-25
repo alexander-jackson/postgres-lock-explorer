@@ -1,22 +1,33 @@
 import './App.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
 const App = () => {
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [query]);
 
   const { data: results, isLoading, isError } = useQuery({
-    queryKey: ['locks', query],
+    queryKey: ['locks', debouncedQuery],
     queryFn: async () => {
       const response = await axios.put('http://localhost:5430/locks', {
-        query,
+        query: debouncedQuery,
         schema: null,
         relation: null,
       });
       return response.data;
     },
-    enabled: !!query, // Only fetch when query is not empty
+    enabled: !!debouncedQuery,
   });
 
   return (
